@@ -18,76 +18,30 @@ import argparse
 
 from datasets import DatasetDict, concatenate_datasets
 from transformers import AutoTokenizer
-from util import FILE_ADD, FILE_DELETE, FILE_END, REPLACE, REPLACE_OLD, REPLACE_NEW,REPLACE_END,INSERT,INSERT_OLD,INSERT_NEW ,INSERT_END,DELETE,DELETE_END,KEEP,KEEP_END
 
 
 from data_utils import CQADatasetLoader, CMGDatasetLoader, SVAMPDatasetLoader, ESNLIDatasetLoader, ANLI1DatasetLoader, ASDivDatasetLoader
-from metrics import compute_text_acc, compute_equation_acc, compute_metrics_text, compute_metrics_equation, compute_metrics_text_aux, compute_metrics_equation_aux
+from metrics import compute_metrics_text, compute_metrics_equation, compute_metrics_text_aux, compute_metrics_equation_aux
 from train_utils import train_and_evaluate
 
 def run(args):
     #### Prepare datasets
     if args.dataset == 'cqa':
         dataset_loader = CQADatasetLoader()
-    elif args.dataset == 'svamp':
-        dataset_loader = SVAMPDatasetLoader()
-    elif args.dataset == 'esnli':
-        dataset_loader = ESNLIDatasetLoader()
-    elif args.dataset == 'anli1':
-        dataset_loader = ANLI1DatasetLoader()
     elif args.dataset == 'cmg':
         dataset_loader = CMGDatasetLoader()
-    elif args.dataset == 'asdiv':  # NOTE: for augmenting SVAMP only
-        dataset_loader = SVAMPDatasetLoader()
-        dataset_loader_svamp = SVAMPDatasetLoader()
-        dataset_loader_asdiv = ASDivDatasetLoader()
     else:
         raise ValueError
 
-    if args.dataset == 'asdiv':
-        datasets_svamp = dataset_loader_svamp.load_from_json()
-        datasets_asdiv = dataset_loader_asdiv.load_from_json()
-        datasets = DatasetDict({
-            'train': concatenate_datasets([datasets_svamp['train'], datasets_asdiv['train']]),
-            'test': datasets_svamp['test']
-        })
-    else:
-        datasets = dataset_loader.load_from_json()
 
-    if args.llm is None:
-        pass
-    elif args.llm == 'palm':
-        if args.dataset == 'asdiv':
-            # training set = SVAMP training + ASDiv training
-            train_llm_rationales_svamp, train_llm_labels_svamp = dataset_loader_svamp.load_llm_preds(split='train')
-            train_llm_rationales_asdiv, train_llm_labels_asdiv = dataset_loader_asdiv.load_llm_preds(split='train')
-            train_llm_rationales = train_llm_rationales_svamp + train_llm_rationales_asdiv
-            train_llm_labels = train_llm_labels_svamp + train_llm_labels_asdiv
-            # test set = SVAMP test
-            test_llm_rationales, test_llm_labels = dataset_loader_svamp.load_llm_preds(split='test')
-        else:
-            train_llm_rationales, train_llm_labels = dataset_loader.load_llm_preds(split='train')
-            test_llm_rationales, test_llm_labels = dataset_loader.load_llm_preds(split='test')
-    elif args.llm == 'gpt':
-        train_llm_rationales, train_llm_labels = dataset_loader.load_gpt_preds(split='train')
-        test_llm_rationales, test_llm_labels = dataset_loader.load_gpt_preds(split='test')
-    else:
-        raise ValueError
-
-    if args.llm is not None:
-        datasets['train'] = datasets['train'].add_column('llm_label', train_llm_labels)
-        datasets['test'] = datasets['test'].add_column('llm_label', test_llm_labels)
-        datasets['train'] = datasets['train'].add_column('llm_rationale', train_llm_rationales)
-        datasets['test'] = datasets['test'].add_column('llm_rationale', test_llm_rationales)
+    datasets = dataset_loader.load_from_json()
 
     if args.subsample < 1.0:
         datasets['train'] = datasets['train'].train_test_split(test_size=1.0-args.subsample, seed=args.run)['train']
 
     #### Prepare datasets Prepare data for training
     tokenizer = AutoTokenizer.from_pretrained(args.from_pretrained)
-    special_tokens_dict = {'additional_special_tokens': [REPLACE, REPLACE_OLD, REPLACE_NEW,REPLACE_END,INSERT,INSERT_OLD,INSERT_NEW ,INSERT_END,DELETE,DELETE_END,KEEP,KEEP_END]}
-    tokenizer.add_special_tokens(special_tokens_dict)
-
+   
 
     if args.model_type == 'task_prefix':
         def tokenize_function(examples):

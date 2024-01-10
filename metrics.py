@@ -62,6 +62,7 @@ def compute_metrics_text(tokenizer):
 
     def compute_metrics(eval_preds):
         predictions, labels = eval_preds
+        predictions[0] = predictions[0].replace(-100,tokenizer.pad_token_id)
         print(predictions[0])
         decoded_preds = tokenizer.batch_decode(predictions[0], skip_special_tokens=True)
         labels = np.where(labels[0] != -100, labels[0], tokenizer.pad_token_id)
