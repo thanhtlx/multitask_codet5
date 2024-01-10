@@ -6,3 +6,4 @@ ckpts/
 logs/
 dev*
 *.txt
+env
