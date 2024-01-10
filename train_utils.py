@@ -121,8 +121,6 @@ def train_and_evaluate(args, run, tokenizer, tokenized_datasets, compute_metrics
         )
 
     predictions = predict_results.predictions
-    # decoded_preds = tokenizer.batch_decode(predictions[0], skip_special_tokens=True)
-    # predictions = np.where(predictions[0] != -100, predictions[0], tokenizer.pad_token_id)
     predictions = tokenizer.batch_decode(
         predictions[0], skip_special_tokens=True, clean_up_tokenization_spaces=True
     )
