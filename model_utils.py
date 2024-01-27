@@ -48,7 +48,7 @@ class TaskPrefixTrainer(Seq2SeqTrainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
         pred_outputs = model(**inputs['pred'])
-        expl_outputs = model(**inputs['expl'])
+        expl_outputs = pred_outputs
         
         # loss = self.alpha * pred_outputs.loss + (1. - self.alpha) * expl_outputs.loss
         # print('loss1',pred_outputs.loss)
