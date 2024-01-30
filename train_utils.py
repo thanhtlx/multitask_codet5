@@ -24,7 +24,6 @@ from transformers import DataCollatorForSeq2Seq
 from transformers.trainer_utils import set_seed
 
 from model_utils import TaskPrefixDataCollator, TaskPrefixTrainer
-from util import FILE_ADD, FILE_DELETE, FILE_END, REPLACE, REPLACE_OLD, REPLACE_NEW,REPLACE_END,INSERT,INSERT_OLD,INSERT_NEW ,INSERT_END,DELETE,DELETE_END,KEEP,KEEP_END
 
 
 def get_config_dir(args):
